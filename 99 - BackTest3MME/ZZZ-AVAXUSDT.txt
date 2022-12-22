@@ -1,0 +1,10 @@
+paire = "AVAXUSDT"
+dateDebut = "11 january 2020"
+
+#88-228-449
+
+emaTest1 = 88
+emaTest2 = 228
+emaTest3 = 449
+
+

@@ -1,0 +1,20 @@
+40-225-250
+
+emaTest1 = 40
+emaTest2 = 225
+emaTest3 = 250
+
+
+Période : [2020-08-14 13:00:00] -> [2022-04-17 02:00:00]
+Montant Départ dans le wallet : 1000 $
+Montant final dans le wallet : 111178.77 $
+Performance du wallet avec le Bot 11017.88 %
+Performance du wallet avec maintien seulement 4139.68 %
+Nombre de transactions positives: 16
+Nombre de transactions négatives: 21
+Gain moyen par transaction positive: 55.41 %
+Perte moyenne par transaction négative: -5.46 %
+La plus meilleure transaction 203.15 % -> 2021-11-11 15:00:00
+La plus pire transaction -15.09 % -> 2020-09-13 11:00:00
+Le pire drawback: -30.64 %
+Frais total : 1283.31 $

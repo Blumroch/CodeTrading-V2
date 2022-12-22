@@ -1,0 +1,19 @@
+
+
+21/12/2022
+
+À refaire, quand j'aurai le chapire
+
+14/12/2022
+
+Le programme doit être refait.
+
+Correction à faire
+Enlever la scrape
+Quantité initiale dans le wallet = 100
+Si le wallet est inférieur à 75 alors sortir de la boucles
+Si le montant final du wallet est inférieur à 150, alors ne pas l'indexer.
+
+Éventuellement
+Afficher seulement les 20 meilleures indices à la fin.
+

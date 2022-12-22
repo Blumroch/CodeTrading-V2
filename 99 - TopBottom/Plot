@@ -1,0 +1,17 @@
+plot_level(
+    pair_symbol = "BTCUSDT", 
+    startDate = "17 november 2020", 
+    top_bottom_window = 5, # le nbre de chandelle avant et après le top ou le bottom
+    group_multiplier = 2, # Le nbre de fois que la moyenne est acceptée ### comprendre d'où vient cette moyenne!!!
+    min_group_number = 3, # Le nombre de regroupement afficher
+    show_tv_code = True
+)
+
+plot_level(
+    pair_symbol = "ETHUSDT", 
+    startDate = "17 november 2020", 
+    top_bottom_window = 5, # le nbre de chandelle avant et après le top ou le bottom
+    group_multiplier = 2, # Le nbre de fois que la moyenne est acceptée ### comprendre d'où vient cette moyenne!!!
+    min_group_number = 3, # Le nombre de regroupement afficher
+    show_tv_code = True
+)

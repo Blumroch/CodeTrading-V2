@@ -1,0 +1,46 @@
+ 
+#MesProfits = usdt + coin * df['close'].iloc[-1]
+#print("Après 4 ans j'ai:",MesProfits)
+#print ("Si j'avais acheté 1000$ de coin au 1er août 2017, j'aurais:",1000/df['close'].iloc[0]*df['close'].iloc[-1],'USDT')
+
+print("Période : [" + str(df.index[0]) + "] -> [" +str(df.index[len(df)-1]) + "]")
+dt = dt.set_index(dt['date'])
+dt.index = pd.to_datetime(dt.index)
+dt['resultat'] = dt['wallet'].diff()
+dt['resultat%'] = dt['wallet'].pct_change()*100
+dt.loc[dt['position']=='Achat','resultat'] = None
+dt.loc[dt['position']=='Achat','resultat%'] = None
+
+dt['tradeIs'] = ''
+dt.loc[dt['resultat']>0,'tradeIs'] = 'bon'
+dt.loc[dt['resultat']<=0,'tradeIs'] = 'pasBon'
+    
+iniClose = df.iloc[0]['close']
+DernierClose = df.iloc[len(df)-1]['close']
+pourcentageMaintien = ((DernierClose - iniClose)/iniClose) * 100
+pourcentageBot = ((wallet - walletInitial)/walletInitial) * 100
+# Je ne comprends pas à quoi sert le vsHoldPorcentage
+#vsHoldPorcentage = ((algoPourcentage - holdPourcentage)/holdPourcentage) * 100
+
+print("Montant de départ dans le wallet:",walletInitial,"$")
+print("Montant final dans le wallet:",round(wallet,2),"$")
+print("Performance du bot:",round(pourcentageBot,2),"%")
+print("Performence du maintien:",round(pourcentageMaintien,2),"%")
+# Je ne comprends pas à quoi sert le vsHoldPorcentage
+#print("Performance vs Buy and Hold :",round(vsHoldPorcentage,2),"%")
+print("Nombre de transactions positives:",dt.groupby('tradeIs')['date'].nunique()['bon'])
+print("Nombre de transactions négatives:",dt.groupby('tradeIs')['date'].nunique()['pasBon'])
+print("Gain moyen par transction positive: ",round(dt.loc[dt['tradeIs'] == 'bon', 'resultat%'].sum()/dt.loc[dt['tradeIs'] == 'bon', 'resultat%'].count(),2),"%")
+print("Perte moyenne par transction négative  : ",round(dt.loc[dt['tradeIs'] == 'pasBon', 'resultat%'].sum()/dt.loc[dt['tradeIs'] == 'pasBon', 'resultat%'].count(),2),"%")
+idMeilleur = dt.loc[dt['tradeIs'] == 'bon', 'resultat%'].idxmax()
+idPire = dt.loc[dt['tradeIs'] == 'pasBon', 'resultat%'].idxmin()
+print("La meilleure transaction +"+str(round(dt.loc[dt['tradeIs'] == 'bon', 'resultat%'].max(),2)),"%, le ",dt['date'][idMeilleur])
+print("La pire transaction",round(dt.loc[dt['tradeIs'] == 'pasBon', 'resultat%'].min(),2),"%, le ",dt['date'][idPire])
+print("Worst drawBack", str(100*round(dt['drawBack'].min(),2)),"%")
+print("Frais total pour les transactions : ",round(dt['fee'].sum(),2),"$")
+
+dt[['wallet','prix']].plot(subplots=True, figsize=(12,10))
+print('PLOT')
+
+
+
