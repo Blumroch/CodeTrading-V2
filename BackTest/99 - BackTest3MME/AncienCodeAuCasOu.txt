@@ -1,0 +1,207 @@
+#Le programme peut prendre quelques minutes à s'exécuter car nous allons chercher
+# beaucoup de données chez Binance. 
+# 
+
+from sqlite3 import Timestamp
+import pandas as pd # Librairy pour la manipulation et l'analyse de données
+from binance.client import Client # L'exchage où on peut aller extraire les paires cryptos 
+import ta # Librairy pour l'analyse technique
+
+emaTest1 = 13
+emaTest2 = 48
+emaTest3 = 200
+
+
+#Pour dateDebut, reculer de 7 jours pour calcul des RSI
+paire = "BTCUSDT"
+dateDebut = "10 december 2019"
+dateFin = "10 april 2021"
+
+
+# On va chercher les données chez Binance paire,temps,date début
+klinesT= Client().get_historical_klines(paire,Client().KLINE_INTERVAL_1HOUR,dateDebut,dateFin)
+# Les données qu'on va chercher séparées par colonnes
+df = pd.DataFrame(klinesT,columns=['timestamp','open','high','low','close','volume','close_time','quote_av','trades','tb_base_av','tb_quote_av','ignore'])
+
+# On affiche tout ça.
+#print(df)
+
+#On fait du ménage en supprimant les colonnes inutiles
+del df['ignore']
+del df['close_time']
+del df['quote_av']
+del df['trades']
+del df['tb_base_av']
+del df['tb_quote_av']
+
+# On affiche tout ça.
+#print(df)
+
+#On converti les autres colonnes pour que la donnée soit de format numérique
+df['close'] = pd.to_numeric(df['close'])
+df['high'] = pd.to_numeric(df['high'])
+df['low'] = pd.to_numeric(df['low'])
+df['open'] = pd.to_numeric(df['open'])
+df['volume'] = pd.to_numeric(df['volume'])
+#On converti timestam en date lisible UTC Time
+df = df.set_index(df['timestamp'])
+df.index = pd.to_datetime(df.index,unit='ms')
+#del df['timestamp']
+
+# On affiche tout ça.
+#print(df)
+
+#2 nouvelles colonnes avec la moyenne mobile simple 200 heures et 600 heures.
+df['EMAX1'] = ta.trend.ema_indicator(df['close'],emaTest1)
+df['EMAX2'] = ta.trend.ema_indicator(df['close'],emaTest2)
+df['EMAX3'] = ta.trend.ema_indicator(df['close'],emaTest3)
+
+df['%K'] = ta.momentum.stochrsi_k(df['close'],14,3)
+df['%D'] = ta.momentum.stochrsi_d(df['close'],14,3)
+#df['emaTest1'] = pd.to_numeric(df['emaTest1'])
+#df['emaTest2'] = pd.to_numeric(df['emaTest2'])
+
+# On affiche tout ça.
+#print(df)
+
+#BACKTESTING COMMENCE ENFIN ICITTE
+#On fait semblant d'investir 1000 USDT le 1 janvier 2017
+
+#Un nouveau tableau pour tracer une courbe
+dt = None
+dt = pd.DataFrame(columns = ['date','position', 'prix', 'fee' ,'fiat', 'coins', 'wallet', 'drawBack'])
+
+usdt = 1000
+walletInitial = usdt
+coin = 0
+wallet = 1000
+fee = 0.0007
+athWallet =0 
+dernierIndex = df.first_valid_index()
+
+prixDernierAchat = 0
+meilleureTransaction = 0
+pireTransaction = 0
+
+#On passe chacun des index du tableau ci-haut.
+for index, row in df.iterrows() :
+    
+    #ACHAT emaTest1>emaTest2 et que j'ai au moins 10$
+    #if df['EMAX1'][dernierIndex] > df['EMAX2'][dernierIndex] and usdt > 10 :
+    if row['EMAX1'] > row['EMAX2'] and row['EMAX3'] < row['close'] and row['%K'] > row['%D'] and usdt > 10 :    
+        usdtDepart = usdt
+        #Converti USDT en coin comme si on vendait
+        coin = usdt / row['close']
+        # on enlève les frais par principe
+        tradeFee = usdt * fee
+        coin = coin - (tradeFee/row['close'])
+        #on a tout échanger nos USDT
+        usdt = 0
+        wallet = coin * row['close']
+            
+        if wallet > athWallet:
+            athWallet = wallet
+        #print("Achat de coin au prix de : ",row['close'],'$ le', index)
+        #print("Achat;",index,";",coin,";",row['close'])
+        myrow = {'date': index,'position': "Achat",'prix': row['close'],'fee': tradeFee,'fiat': usdt,'coins': coin,'wallet': wallet,'drawBack': (wallet-athWallet)/athWallet, 'tradeIs': None, 'pctTranscation': None}
+        #myrow = {'date': 1,'position': 1,'prix': 1,'fee': 1,'fiat': 1,'coins': 1,'wallet': 1,'drawBack': 1}
+        dt = pd.concat([dt, pd.DataFrame.from_records([myrow])])
+        #dt = dt.append(myrow,ignore_index=True) Ne semble plus fonctionner. Remplacer par concat
+
+    # VEND emaTest1<emaTest2 et que j'ai au moins 0,0001 coin
+    if row['EMAX1'] < row['EMAX2'] and coin > 0.0001 :
+        #Converti USDT en coin comme si on vendait
+        usdt = coin * row['close']
+        tradeFee = coin * row['close'] * fee
+        
+        usdt = usdt - tradeFee
+        # on enlève les frais par principe
+        #on a tout échanger nos USDT
+        coin = 0
+
+        if usdtDepart < usdt:
+            trade = "bon"
+        else :
+            trade = "pasBon"
+
+        pctTransaction = (usdt-usdtDepart)/usdtDepart*100
+        if pctTransaction > meilleureTransaction :
+            meilleureTransaction = pctTransaction
+            indexMeilleur = index
+        if pctTransaction < pireTransaction :
+            pireTransaction = pctTransaction
+            indexPire = index
+
+        wallet = usdt
+        if wallet > athWallet:
+            athWallet = wallet
+
+        #print("Vend des coin au prix de : ",df['close'][index],'$ le ', index)
+        #print("Vend;",index,";",usdt,";",row['close'])
+        myrow = {'date': index,'position': "Vend",'prix/': row['close'],'fee': tradeFee,'fiat': usdt,'coins': coin,'wallet': wallet,'drawBack':(wallet-athWallet)/athWallet, 'tradeIs': trade, 'pctTranscation': pctTransaction}
+        dt = pd.concat([dt, pd.DataFrame.from_records([myrow])])
+        #dt = dt.append(myrow,ignore_index=True) Ne semble plus fonctionner. Remplacer par concat
+
+    dernierIndex = index
+#print(dt)    
+#MesProfits = usdt + coin * df['close'].iloc[-1]
+#print("Après 4 ans j'ai:",MesProfits)
+#print ("Si j'avais acheté 1000$ de coin au 1er août 2017, j'aurais:",1000/df['close'].iloc[0]*df['close'].iloc[-1],'USDT')
+
+
+print("Période : [" + str(df.index[0]) + "] -> [" +str(df.index[len(df)-1]) + "]")
+dt = dt.set_index(dt['date'])
+dt.index = pd.to_datetime(dt.index)
+#dt['resultat'] = dt['wallet'].diff()
+#dt['resultat%'] = dt['wallet'].pct_change()*100
+#dt.loc[dt['position']=='Achat','resultat'] = None
+#dt.loc[dt['position']=='Achat','resultat%'] = None
+
+#dt['tradeIs'] = ''
+#dt.loc[dt['resultat']>0,'tradeIs'] = 'bon'
+#dt.loc[dt['resultat']<=0,'tradeIs'] = 'pasBon'
+    
+# Je ne comprends pas à quoi sert le vsHoldPorcentage
+#vsHoldPorcentage = ((algoPourcentage - holdPourcentage)/holdPourcentage) * 100
+
+iniClose = df.iloc[0]['close']
+DernierClose = df.iloc[len(df)-1]['close']
+pourcentageMaintien = ((DernierClose - iniClose)/iniClose) * 100
+pourcentageBot = ((wallet - walletInitial)/walletInitial) * 100
+
+print(str(df.index[0]) + "] -> [" +str(df.index[len(df)-1]) + "]")
+print(walletInitial,"$")
+print(round(wallet,2),"$")
+print(round(pourcentageBot,2),"%")
+print(round(pourcentageMaintien,2),"%")
+print(dt.groupby('tradeIs')['date'].nunique()['bon'])
+print(dt.groupby('tradeIs')['date'].nunique()['pasBon'])
+print(round(meilleureTransaction,2),"% ->",indexMeilleur)
+print(round(pireTransaction,2),"% ->",indexPire)
+print(round(dt.loc[dt['tradeIs'] == 'bon', 'pctTranscation'].sum()/dt.loc[dt['tradeIs'] == 'bon', 'pctTranscation'].count(),2),"%")
+print(round(dt.loc[dt['tradeIs'] == 'pasBon', 'pctTranscation'].sum()/dt.loc[dt['tradeIs'] == 'pasBon', 'pctTranscation'].count(),2),"%")
+print(str(100*round(dt['drawBack'].min(),2)),"%")
+print(round(dt['fee'].sum(),2),"$")
+
+
+print("Montant de départ dans le wallet:",walletInitial,"$")
+print("Montant final dans le wallet:",round(wallet,2),"$")
+print("Performance du bot:",round(pourcentageBot,2),"%")
+print("Performence du maintien:",round(pourcentageMaintien,2),"%")
+# Je ne comprends 99pas à quoi sert le vsHoldPorcentage
+#print("Performance vs Buy and Hold :",round(vsHoldPorcentage,2),"%")
+print("Nombre de transactions positives:",dt.groupby('tradeIs')['date'].nunique()['bon'])
+print("Nombre de transactions négatives:",dt.groupby('tradeIs')['date'].nunique()['pasBon'])
+print("Gain moyen par transaction positive: ",round(dt.loc[dt['tradeIs'] == 'bon', 'pctTranscation'].sum()/dt.loc[dt['tradeIs'] == 'bon', 'pctTranscation'].count(),2),"%")
+print("Perte moyenne par transaction négative  : ",round(dt.loc[dt['tradeIs'] == 'pasBon', 'pctTranscation'].sum()/dt.loc[dt['tradeIs'] == 'pasBon', 'pctTranscation'].count(),2),"%")
+#idMeilleur = dt.loc[dt['tradeIs'] == 'bon', 'pctTranscation'].idxmax()
+#idMeilleur = dt.loc[dt['tradeIs'] == 'bon', 'pctTranscation'].idxmax()
+#idPire = dt.loc[dt['tradeIs'] == 'pasBon', 'pctTranscation'].idxmin()
+print("La meilleure transaction : ",round(meilleureTransaction,2),"% ->",indexMeilleur)
+print("La pire transaction : ",round(pireTransaction,2),"% ->",indexPire)
+#print("La pire transaction",round(dt.loc[dt['tradeIs'] == 'psBon', 'pctTranscation'].min(),2),"%, le ",dt['date'][idPire])
+print("Worst drawBack", str(100*round(dt['drawBack'].min(),2)),"%")
+print("Frais total pour les transactions : ",round(dt['fee'].sum(),2),"$")
+
+#dt['wallet','prix'].plot(subplots=True, figsize=(12,10))
+#print('PLOT')

@@ -9,16 +9,17 @@ import matplotlib.pyplot as plt
 
 client = Client()
 
-paire = "FLUXBTC"
+paire = "BTCUSDT"
 dateDebut = "1 january 2017"
 #dateFin = "10 april 2021"
 pd.set_option('display.max_columns', None)
-iSMAMax = 100
+pd.set_option('display.max_rows', None)
+iSMAMax = 1000
 iDTMax = 5
 iVenteAchat = 24
 iTransPos = 0 
 iTransNeg = 0
-iProfitMin = 150 #Profit minimum qu'on garde à la fin
+iProfitMin = 2000 #Profit minimum qu'on garde à la fin
 fFrais = 0.001 #Frais de Binance
 
 # On va chercher les données chez Binance paire,temps,date début
@@ -60,11 +61,12 @@ del df['timestamp']
 dfTest = df.copy()
 
 dResultat = None
-dResultat = pd.DataFrame(columns = ['iIndiceSMA', 'DT', 'iTransPos','iTransNeg','fProfit'])
+dResultat = pd.DataFrame(columns = ['iIndiceSMA', 'DTjour', 'DTPourcent', 'iTransPos','iTransNeg','fProfit'])
+#'DTJour':iIndiceDT, 'DTPourcent': iPourcentage
 count = 0
 
 
-for iIndiceSMA in range(1,iSMAMax+1,1):
+for iIndiceSMA in range(0,iSMAMax+1,1):
     dfTest["SMA"] = ta.trend.sma_indicator(dfTest['close'],iIndiceSMA)
     for iIndiceDT in range(1,iDTMax+1,1):
         dfTest['SMAX'] = dfTest['SMA'].shift(iIndiceDT)
@@ -74,11 +76,17 @@ for iIndiceSMA in range(1,iSMAMax+1,1):
         #print("iIndiceDT=",iIndiceDT)
         #print(dfTest)
         
-        fUsd = 100
-        fCrypto = 0
-        fUsdTransaction = 0
+        #fUsd = 100
+        #fCrypto = 0
+        #fUsdTransaction = 0
          
         for iPourcentage in range(0,iVenteAchat+1, 1) : 
+            fUsd = 100
+            fCrypto = 0
+            fUsdTransaction = 0
+            itradeBon = 0
+            itradePasBon = 0
+
             for index, row in dfTest.iterrows() :
             
                 if row['DT'] < 100-iPourcentage and fUsd > 0 :
@@ -93,15 +101,20 @@ for iIndiceSMA in range(1,iSMAMax+1,1):
                         fCrypto = 0
                         break                
                     fCrypto = 0  
+       
+                    if fUsdTransaction < fUsd: # Comptons les plus bonnes et les plus moins bonnes
+                        itradeBon = itradeBon + 1
+                    else :
+                        itradePasBon = itradePasBon + 1
         #On garde seulement ceux qui ont fait des profits     
             if fCrypto*row['close'] > iProfitMin or fUsd > iProfitMin :
                 if fUsd == 0 :            
-                    myrow = {'iIndiceSMA':iIndiceSMA,'DT':iPourcentage,'fProfit': round(fUsdTransaction,2)}
+                    myrow = {'iIndiceSMA':iIndiceSMA,'DTJour':iIndiceDT,'DTPourcent': iPourcentage,'iTransPos':itradeBon,'iTransNeg':itradePasBon,'fProfit': round(fUsdTransaction,2)}
                 else :
-                    myrow = {'iIndiceSMA':iIndiceSMA, 'DT':iPourcentage,'iTransPos':0,'iTransNeg':0,'fProfit': round(fUsd,2)}
+                    myrow = {'iIndiceSMA':iIndiceSMA,'DTJour':iIndiceDT,'DTPourcent': iPourcentage,'iTransPos':itradeBon,'iTransNeg':itradePasBon,'fProfit': round(fUsd,2)}
             #(columns = ['iIndiceSMA', 'DT', 'iTransPos','iTransNeg'])
                 dResultat = pd.concat([dResultat, pd.DataFrame.from_records([myrow])])
-                print(dResultat)
+                #print(dResultat)
         #del dfTest ['SMAX']
         #del dfTest['DT']
 

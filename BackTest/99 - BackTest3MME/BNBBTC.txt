@@ -1,0 +1,22 @@
+emaTest1 = 13
+emaTest2 = 168
+emaTest3 = 215
+
+paire = "BNBBTC"
+dateDebut = "11 january 2017"
+
+#Ce n'est pas des $, mais des BTC.
+
+Période : [2017-07-14 04:00:00] -> [2022-04-15 10:00:00]
+Montant Départ dans le wallet : 1000 $
+Montant final dans le wallet : 3594445.0 $
+Performance du wallet avec le Bot 359344.5 %
+Performance du wallet avec maintien seulement 20846.52 %
+Nombre de transactions positives: 53
+Nombre de transactions négatives: 125
+Gain moyen par transaction positive: 46.84 %
+Perte moyenne par transaction négative: -2.4 %
+La plus meilleure transaction 1272.19 % -> 2017-08-26 09:00:00
+La plus pire transaction -10.48 % -> 2020-12-30 12:00:00
+Le pire drawback: -24.67 %
+Frais total : 287853.67 $
