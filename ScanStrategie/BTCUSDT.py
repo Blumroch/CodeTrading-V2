@@ -8,7 +8,7 @@ client = Client()
 pd.set_option('display.max_columns', None) # Affichera toutes les colones
 pd.set_option('display.max_rows', None) # Affichera toutes les lignes
 
-ijoursLimits = 45 # Nbre de jours avant aujourd'hui où on va chercher des données
+ijoursLimits = 65 # Nbre de jours avant aujourd'hui où on va chercher des données
 
 dtMaintenant = datetime.now(timezone.utc)
 dtLautreJour = dtMaintenant - timedelta(ijoursLimits)
@@ -58,6 +58,8 @@ del df['timestamp']
 #SCANSTRATEGIE comme icitte
 
 iMeilleureSMA = 672
+fZoneSurvente = 0.92
+fZoneSurachat = 1.13
 df['SMA'] = ta.trend.sma_indicator(df['close'],iMeilleureSMA)
 
 dfLigne = df.iloc[-2]  #Dernière valeur de la chandelle précédentee
@@ -66,16 +68,49 @@ print("Stratégie Scan pour : ",strPaire)
 print("")
 #Scan SMA
 print ("Croissement prix/moyenne mobile : SMA = ", iMeilleureSMA)
-if dfLigne['close'] < dfLigne['SMA']:
+if dfLigne['close'] > dfLigne['SMA']:
     for i in range (2,ijoursLimits*24,1) :
-        if df.iloc[-i]['close'] > df.iloc[-i]['SMA'] :
+        if df.iloc[-i]['close'] < df.iloc[-i]['SMA'] :
             print("ZONE ACHAT DEPUIS (UTC) : ", df.index[-i])
             break
 
-elif dfLigne['close'] >= dfLigne['SMA'] :
-    for i in range (2,ijoursLimits,1) :
-        if df.iloc[-i]['close'] < df.iloc[-i]['SMA'] :
+elif dfLigne['close'] <= dfLigne['SMA'] :
+    for i in range (2,ijoursLimits*24,1) :
+        if df.iloc[-i]['close'] > df.iloc[-i]['SMA'] :
             print("ZONE VENTE DEPUIS (UTC) : ", df.index[-i])
+            break
+else :
+    print ("augmenter le ijoursLimits")
+
+#Scan ZONEAV
+print("")
+print ("Croissement prix/ZoneSurAV : Surachat = ", fZoneSurachat , "Survente = ", fZoneSurvente)
+
+if dfLigne['SMA']*fZoneSurvente < dfLigne['close'] and dfLigne['close'] < dfLigne['SMA']*fZoneSurachat :
+    for i in range (2,(ijoursLimits+1)*24,1) :
+        if df.iloc[-i]['close'] > df.iloc[-i]['SMA']*fZoneSurachat or df.iloc[-i]['close'] <= df.iloc[-i]['SMA']*fZoneSurvente:
+            print("ZONE NEUTRE DEPUIS (UTC) : ", df.index[-i])
+            break
+        if i == ijoursLimits*24 :
+            print ("augmenter le ijoursLimits")
+            break
+
+elif dfLigne['close'] > dfLigne['SMA']*fZoneSurachat :
+    for i in range (2,(ijoursLimits+1)*24,1) :
+        if df.iloc[-i]['close'] < df.iloc[-i]['SMA']*fZoneSurachat :
+            print("ZONE SURACHAT DEPUIS (UTC) : ", df.index[-i])
+            break
+        if i == ijoursLimits*24 :
+            print ("augmenter le ijoursLimits")
+            break
+
+elif dfLigne['close'] <= dfLigne['SMA']*fZoneSurvente :
+    for i in range (2,(ijoursLimits+1)*24,1) :
+        if df.iloc[-i]['close'] > df.iloc[-i]['SMA']*fZoneSurvente :
+            print("ZONE SURVENTE DEPUIS (UTC) : ", df.index[-i])
+            break
+        if i == ijoursLimits*24 :
+            print ("augmenter le ijoursLimits")
             break
 else :
     print ("augmenter le ijoursLimits")

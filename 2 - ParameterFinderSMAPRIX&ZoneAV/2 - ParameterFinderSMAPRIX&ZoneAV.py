@@ -11,11 +11,11 @@ client = Client()
 pd.set_option('display.max_columns', None)
 pd.set_option('display.max_rows', None)
 
-paire = "FLUXBTC"
+paire = "BTCUSDT"
 dateDebut = "1 january 2017"
 #dateFin = "10 april 2021"
 
-iMeilleureSMA = 325
+iMeilleureSMA = 672
 iIndiceZoneAchat = 24
 iIndiceZoneVente = 24
 iProfitMin = 100 #Profit minimum qu'on garde à la fin
@@ -95,5 +95,9 @@ for iPourcentageAchat in range(1,iIndiceZoneAchat+1,1):
 print ("Best indicator for the crossing of the simple moving average with the price fo " + paire)
 print ("from " + str(df.index[0]) + " to " + str(df.index[len(df)-1]) + " for a time frame of 1 hour")
 
+print("Tri par profit")
 print(dResultat.sort_values(by=['fProfit']))
+print("")
+print("Tri par profit")
+print(dResultat.sort_values(by=['fRatioTradeBon']))
 #dt.plot.scatter(x='i',y='j',c='result',s=50,xolormap='seismic')

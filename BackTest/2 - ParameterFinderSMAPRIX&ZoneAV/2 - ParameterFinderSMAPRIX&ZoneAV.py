@@ -11,14 +11,14 @@ pd.set_option('display.max_columns', None)
 pd.set_option('display.max_rows', None)
 
 #Paire(vérifier chez Binance)
-paire = "FLUXBTC"
+paire = "BTCUSDT"
 dateDebut = "01 january 2017"
 #dateFin = "10 april 2021"
 
 #Mettre la valeur du ParameterFin3der
-iBestSma = 325
-iZoneAchat = 0.96
-iZoneVente = 1.08
+iBestSma = 672
+iZoneAchat = 1.13
+iZoneVente = 0.92
 
 # On va chercher les données chez Binance paire,temps,date début
 klinesT= Client().get_historical_klines(paire,Client().KLINE_INTERVAL_1HOUR,dateDebut)
