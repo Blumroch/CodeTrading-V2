@@ -8,8 +8,10 @@ import ta # Librairy pour l'analyse technique
 import matplotlib.pyplot as plt
 
 client = Client()
+pd.set_option('display.max_columns', None)
+pd.set_option('display.max_rows', None)
 
-paire = "FLUXBTC"
+paire = "BTCUSDT"
 dateDebut = "1 january 2017"
 #dateFin = "10 april 2021"
 
@@ -56,7 +58,7 @@ del df['timestamp']
 dfTest = df.copy()
 
 dResultat = None
-dResultat = pd.DataFrame(columns = ['iIndiceSMA', 'fProfit'])
+dResultat = pd.DataFrame(columns = ['iIndiceSMA', 'fProfit', 'iTradeBon','iTradePasBon','fRatioTradeBon'])
 count = 0
 
 for iIndiceSMA in range(1,iSMAMax+1,1):
@@ -64,7 +66,9 @@ for iIndiceSMA in range(1,iSMAMax+1,1):
     fUsd = 100
     fCrypto = 0
     fUsdTransaction = 0
-
+    itradeBon = 0
+    itradePasBon = 0
+    
     for index, row in dfTest.iterrows() :
         if row['close'] > row['SMA'] and fUsd > 0 :
         # ACHAT quand PRIX<SMA
@@ -72,18 +76,23 @@ for iIndiceSMA in range(1,iSMAMax+1,1):
             fUsdTransaction = fUsd
             fUsd = 0            
         # VEND PRIX<SMA
-        elif row['close'] <= row['SMA'] and fCrypto > 0 :
+        elif row['close'] <= row['SMA'] and fCrypto > 0 and index != dfTest.index[-1]:
             fUsd = fCrypto * row['close'] - fFrais * fCrypto * row['close']
             if fUsd < 50:
                 fCrypto = 0
                 break                
-            fCrypto = 0           
+            fCrypto = 0
+            if fUsdTransaction < fUsd: # Comptons les plus bonnes et les plus moins bonnes
+                itradeBon = itradeBon + 1
+            else :
+                itradePasBon = itradePasBon + 1           
     #On garde seulement ceux qui ont fait des profits     
     if fCrypto*row['close'] > iProfitMin or fUsd > iProfitMin :
+        fRatioTradeBon = itradeBon/(itradePasBon+itradeBon)
         if fUsd == 0 :            
-            myrow = {'iIndiceSMA':iIndiceSMA,'fProfit': round(fUsdTransaction,2)}
+            myrow = {'iIndiceSMA':iIndiceSMA,'fProfit': round(fUsdTransaction,2),'iTradeBon':itradeBon,'iTradePasBon':itradePasBon,'fRatioTradeBon':round(fRatioTradeBon,2)}
         else :
-            myrow = {'iIndiceSMA':iIndiceSMA,'fProfit': round(fUsd,2)}
+            myrow = {'iIndiceSMA':iIndiceSMA,'fProfit': round(fUsd,2),'iTradeBon':itradeBon,'iTradePasBon':itradePasBon,'fRatioTradeBon':round(fRatioTradeBon,2)}
 
         dResultat = pd.concat([dResultat, pd.DataFrame.from_records([myrow])])
 
