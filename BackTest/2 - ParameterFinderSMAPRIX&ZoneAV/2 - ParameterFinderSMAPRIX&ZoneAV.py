@@ -11,14 +11,14 @@ pd.set_option('display.max_columns', None)
 pd.set_option('display.max_rows', None)
 
 #Paire(vérifier chez Binance)
-paire = "BTCUSDT"
+paire = "FLUXBTC"
 dateDebut = "01 january 2017"
 #dateFin = "10 april 2021"
 
 #Mettre la valeur du ParameterFin3der
-iBestSma = 672
-iZoneAchat = 1.13
-iZoneVente = 0.92
+iBestSma = 325
+iZoneSurachat = 1.08
+iZoneSurvente = 0.96
 
 # On va chercher les données chez Binance paire,temps,date début
 klinesT= Client().get_historical_klines(paire,Client().KLINE_INTERVAL_1HOUR,dateDebut)
@@ -62,8 +62,6 @@ df['SMA'] = ta.trend.sma_indicator(df['close'],iBestSma)
 #BACKTESTING COMMENCE ENFIN ICITTE
 #On fait semblant d'investir 1000 fBTC à dateDebut
 #Un nouveu tableau pour nos infos
-dt = None
-dt = pd.DataFrame(columns = ['date','position', 'prix', 'Frais' ,'fiat', 'coins', 'wallet', 'drawBack'])
 
 fBTC = 1000
 fBTCDepart = fBTC
@@ -84,7 +82,7 @@ fAthWallet = 0
 #On passe chacun des index du tableau ci-haut.
 for index, row in df.iterrows() :
     #ACHAT
-    if row['close'] < row['SMA']*iZoneAchat and fBTC>0 :    
+    if row['close'] < row['SMA']*iZoneSurvente and fBTC>0 :    
         fBTCTransaction = fBTC # Pour calculer la valeur de la transcation
         fCrypto = fBTC / row['close'] #Converti BTC en Coin comme si on vendait et on enlève les frais
         fFraisTransaction = fBTC * fFrais # Calculer les frais par principe
@@ -93,7 +91,7 @@ for index, row in df.iterrows() :
         fBTC = 0 # on a tout échanger nos fBTC
         print(index,",ACHAT,",fCrypto,",FLUX,",row['close'],",",fFraisTransaction)  #Pour CSV  
     # VEND
-    elif row['close'] >= row['SMA']*iZoneVente and fCrypto>0 :            
+    elif row['close'] >= row['SMA']*iZoneSurachat and fCrypto>0 :            
         fBTC = fCrypto * row['close']  #Converti les Coin en fBTC comme si on vendait et on enlève les frais
         fFraisTransaction = fCrypto * row['close'] * fFrais # Calcul des frais total
         fTotalFrais = fTotalFrais + fFraisTransaction # Calcul des frais total
@@ -165,11 +163,8 @@ print(round(fPourcentageBot,2)) # Performance du wallet
 print(round(fPourcentageMaintien,2)) # Performence du maintien
 print(iTradeBon) # Nombre de bonne transaction
 print(iTradePasBon) #Nombre de pas bonne transaction
-#print("----")
 print(round(fPourcentageMoyenPositif,2)) # Pourcentage moyen par transaction positive
 print(round(fPourcentageMoyenNegatif,2)) # Pourcentage moyen par transaction négative
-#print("----")
 print(round(fMeilleureTransaction,2),"% ->",dtIndexMeilleur)
 print(round(fPireTransaction,2),"% ->",dtIndexPire)
-#print("----")
 print (fTotalFrais) # Frais total

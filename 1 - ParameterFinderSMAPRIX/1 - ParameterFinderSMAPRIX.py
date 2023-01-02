@@ -1,6 +1,5 @@
-#Le programme peut prendre quelques minutes à s'exécuter car nous allons chercher
-# beaucoup de données chez Binance. 
-# 
+#Ce programme trouve les meilleurs SMA.  Il achète dès que le prix est supérieur à la SMA 
+# et revend dès aue le est inférieur au SMA.
 
 import pandas as pd # Librairy pour la manipulation et l'analyse de données
 from binance.client import Client # L'exchage où on peut aller extraire les paires cryptos 
@@ -70,8 +69,8 @@ for iIndiceSMA in range(1,iSMAMax+1,1):
     itradePasBon = 0
     
     for index, row in dfTest.iterrows() :
+        # ACHAT
         if row['close'] > row['SMA'] and fUsd > 0 :
-        # ACHAT quand PRIX<SMA
             fCrypto = fUsd / row['close'] - fFrais * fUsd / row['close']
             fUsdTransaction = fUsd
             fUsd = 0            
@@ -87,7 +86,7 @@ for iIndiceSMA in range(1,iSMAMax+1,1):
             else :
                 itradePasBon = itradePasBon + 1           
     #On garde seulement ceux qui ont fait des profits     
-    if fCrypto*row['close'] > iProfitMin or fUsd > iProfitMin :
+    if fCrypto*dfTest.iloc[-1]['close'] > iProfitMin or fUsd > iProfitMin :
         fRatioTradeBon = itradeBon/(itradePasBon+itradeBon)
         if fUsd == 0 :            
             myrow = {'iIndiceSMA':iIndiceSMA,'fProfit': round(fUsdTransaction,2),'iTradeBon':itradeBon,'iTradePasBon':itradePasBon,'fRatioTradeBon':round(fRatioTradeBon,2)}

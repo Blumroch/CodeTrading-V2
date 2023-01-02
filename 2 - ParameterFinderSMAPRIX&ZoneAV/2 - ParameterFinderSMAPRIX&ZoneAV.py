@@ -18,6 +18,8 @@ dateDebut = "1 january 2017"
 iMeilleureSMA = 672
 iIndiceZoneAchat = 24
 iIndiceZoneVente = 24
+bZoneSurachat = 0
+bZoneSurvente = 0
 iProfitMin = 100 #Profit minimum qu'on garde à la fin
 fFrais = 0.001 #Frais de Binance
 
@@ -51,44 +53,58 @@ del df['timestamp']
 dfTest = df.copy()
 
 dResultat = None
-dResultat = pd.DataFrame(columns = ['iZoneAchat', 'iZoneVente', 'fProfit', 'iTradeBon','iTradePasBon','fRatioTradeBon'])
+dResultat = pd.DataFrame(columns = ['iZoneVente', 'iZoneAchat', 'fProfit', 'iTradeBon','iTradePasBon','fRatioTradeBon'])
 count = 0
 
 dfTest["SMA"] = ta.trend.sma_indicator(dfTest['close'],iMeilleureSMA)
 
-for iPourcentageAchat in range(1,iIndiceZoneAchat+1,1):    
-    for iPourcentageVente in range(1,iIndiceZoneVente+1,1):
+for iZoneSurvente in range(1,iIndiceZoneAchat+1,1):    
+    for iZoneSurachat in range(1,iIndiceZoneVente+1,1):
         fUsd = 100
         fCrypto = 0
         fUsdTransaction = 0
         itradeBon = 0
         itradePasBon = 0
+        bZoneSurvente = 0
+        bZoneSurachat = 0
+        
+        
         for index, row in dfTest.iterrows() :
-            if row['close'] < row['SMA']*(1-(iPourcentageAchat/100)) and fUsd > 0 :
-            # ACHAT quand PRIX<SMA
+            if row['close'] < row['SMA']*(1-(iZoneSurvente/100)) :
+                bZoneSurvente = 1
+            elif row['close'] > row['SMA']*(1+(iZoneSurachat/100)) :
+                bZoneSurachat = 1
+
+
+            # ACHAT
+            if bZoneSurvente == 1 and row['close'] > row['SMA']*(1-(iZoneSurvente/100)) and fUsd > 0 :
+ 
                 #print("ACHAT")
                 fCrypto = fUsd / row['close'] - fFrais * fUsd / row['close']
                 fUsdTransaction = fUsd
-                fUsd = 0            
-            # VEND PRIX<SMA
-            elif row['close'] > row['SMA']*(1+(iPourcentageVente/100)) and fCrypto > 0 and index != dfTest.index[-1] :
+                fUsd = 0
+                bZoneSurvente = 0        
+            # VEND
+            elif bZoneSurachat == 1 and row['close'] < row['SMA']*(1+(iZoneSurachat/100)) and fCrypto > 0 and index != dfTest.index[-1] :
                 #print("VENTE")
                 fUsd = fCrypto * row['close'] - fFrais * fCrypto * row['close']
                 if fUsd < 50:
                     fCrypto = 0
                     break                
                 fCrypto = 0
+                bZoneSurachat = 0
+
                 if fUsdTransaction < fUsd: # Comptons les plus bonnes et les plus moins bonnes
                     itradeBon = itradeBon + 1
                 else :
                     itradePasBon = itradePasBon + 1           
      #On garde seulement ceux qui ont fait des profits     
-        if fCrypto*row['close'] > iProfitMin or fUsd > iProfitMin :
-            fRatioTradeBon = itradeBon/(itradePasBon+itradeBon)
+        if fCrypto*dfTest.iloc[-1]['close'] > iProfitMin or fUsd > iProfitMin :
+            fRatioTradeBon = (itradeBon/(itradePasBon+itradeBon))*100
             if fUsd == 0 :            
-                myrow = {'iZoneAchat': iPourcentageAchat, 'iZoneVente':iPourcentageVente,'fProfit': round(fUsdTransaction,2),'iTradeBon':itradeBon,'iTradePasBon':itradePasBon,'fRatioTradeBon':round(fRatioTradeBon,2)}
+                myrow = {'iZoneVente': 100-iZoneSurvente, 'iZoneAchat':100 + iZoneSurachat,'fProfit': round(fUsdTransaction,2),'iTradeBon':itradeBon,'iTradePasBon':itradePasBon,'fRatioTradeBon':round(fRatioTradeBon,2)}
             else :
-                myrow = {'iZoneAchat': iPourcentageAchat, 'iZoneVente':iPourcentageVente,'fProfit': round(fUsd,2),'iTradeBon':itradeBon,'iTradePasBon':itradePasBon,'fRatioTradeBon':round(fRatioTradeBon,2)}
+                myrow = {'iZoneVente': 100-iZoneSurvente, 'iZoneAchat':100 + iZoneSurachat,'fProfit': round(fUsd,2),'iTradeBon':itradeBon,'iTradePasBon':itradePasBon,'fRatioTradeBon':round(fRatioTradeBon,2)}
                 #['iZoneAchat', 'iZoneVente', 'fProfit', 'iTradeBon','iTradePasBon','fRatioTradeBon'])
             dResultat = pd.concat([dResultat, pd.DataFrame.from_records([myrow])])
 
@@ -98,6 +114,6 @@ print ("from " + str(df.index[0]) + " to " + str(df.index[len(df)-1]) + " for a 
 print("Tri par profit")
 print(dResultat.sort_values(by=['fProfit']))
 print("")
-print("Tri par profit")
+print("Tri par trade")
 print(dResultat.sort_values(by=['fRatioTradeBon']))
 #dt.plot.scatter(x='i',y='j',c='result',s=50,xolormap='seismic')
